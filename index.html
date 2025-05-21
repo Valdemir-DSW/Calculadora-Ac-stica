@@ -80,8 +80,9 @@
 <!-- Aba Gerador Senoidal -->
 <div id="senoidal" class="tab">
   <h3>Gerador de Frequência Senoidal</h3>
-  <label>Frequência (Hz): <input type="number" id="frequencia" value="100" min="20" max="20000"></label>
-  <label>Volume: <input type="range" id="volumeAudio" min="0" max="1" step="0.01" value="0.5"></label>
+  <label>Frequência (Hz): <input type="number" id="frequencia" value="100" min="20" max="20000" oninput="atualizarOsc()"></label>
+  <label>Volume: <input type="range" id="volumeAudio" min="0" max="1" step="0.01" value="0.5" oninput="atualizarOsc()"></label>
+  <label>Duração (minutos, 0 = indefinido): <input type="number" id="duracaoMinutos" min="0" value="0"></label>
   <button onclick="startOsc()">▶️ Play</button>
   <button onclick="stopOsc()">⏸️ Pause</button>
 </div>
@@ -204,13 +205,15 @@ function calcularImpedancia() {
 }
 
 // Gerador Senoidal
-let audioCtx, oscillator, gainNode;
+let audioCtx, oscillator, gainNode, stopTimeout;
 
 function startOsc() {
   const freq = +document.getElementById('frequencia').value;
   const vol = +document.getElementById('volumeAudio').value;
+  const durMin = +document.getElementById('duracaoMinutos').value;
 
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
   oscillator = audioCtx.createOscillator();
   gainNode = audioCtx.createGain();
 
@@ -221,6 +224,10 @@ function startOsc() {
   oscillator.connect(gainNode);
   gainNode.connect(audioCtx.destination);
   oscillator.start();
+
+  if (durMin > 0) {
+    stopTimeout = setTimeout(() => stopOsc(), durMin * 60000);
+  }
 }
 
 function stopOsc() {
@@ -230,6 +237,16 @@ function stopOsc() {
     gainNode.disconnect();
     oscillator = null;
     gainNode = null;
+    if (stopTimeout) clearTimeout(stopTimeout);
+  }
+}
+
+function atualizarOsc() {
+  if (oscillator && gainNode && audioCtx) {
+    const freq = +document.getElementById('frequencia').value;
+    const vol = +document.getElementById('volumeAudio').value;
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
   }
 }
 </script>
