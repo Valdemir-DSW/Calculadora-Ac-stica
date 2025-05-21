@@ -54,8 +54,10 @@
     <select id="tipoDuto" onchange="mostrarCamposDuto()">
       <option value="retangular">Retangular / Quadrado</option>
       <option value="cilindrico">Cilíndrico</option>
+      <option value="triangular">Triangular</option>
     </select>
   </label>
+  <label>Quantidade de dutos: <input type="number" id="qtdDutos" min="1" value="1"></label>
   <div id="camposDuto"></div>
   <button onclick="calcularSintonia()">Calcular Frequência</button>
   <p id="resultadoSintonia"></p>
@@ -160,8 +162,13 @@ function mostrarCamposDuto() {
       <label>Largura do duto (cm): <input type="number" id="larguraDuto"></label>
       <label>Altura do duto (cm): <input type="number" id="alturaDuto"></label>
     `;
-  } else {
+  } else if (tipo === 'cilindrico') {
     html += `<label>Diâmetro do duto (cm): <input type="number" id="diametroDuto"></label>`;
+  } else if (tipo === 'triangular') {
+    html += `
+      <label>Base do triângulo (cm): <input type="number" id="baseTri"></label>
+      <label>Altura do triângulo (cm): <input type="number" id="alturaTri"></label>
+    `;
   }
 
   div.innerHTML = html;
@@ -172,6 +179,7 @@ function calcularSintonia() {
   const Vb = +document.getElementById('volumeSintonia').value / 1000;
   const tipo = document.getElementById('tipoDuto').value;
   const L = +document.getElementById('comprimentoDuto').value / 100;
+  const qtd = Math.max(+document.getElementById('qtdDutos').value || 1, 1);
   const c = 343;
   let A = 0;
 
@@ -179,12 +187,17 @@ function calcularSintonia() {
     const w = +document.getElementById('larguraDuto').value / 100;
     const h = +document.getElementById('alturaDuto').value / 100;
     A = w * h;
-  } else {
+  } else if (tipo === 'cilindrico') {
     const d = +document.getElementById('diametroDuto').value / 100;
     A = Math.PI * Math.pow(d / 2, 2);
+  } else if (tipo === 'triangular') {
+    const base = +document.getElementById('baseTri').value / 100;
+    const altura = +document.getElementById('alturaTri').value / 100;
+    A = (base * altura) / 2;
   }
 
-  const Lcorr = L + 0.85 * Math.sqrt(A);
+  A *= qtd;
+  const Lcorr = L + 0.85 * Math.sqrt(A / qtd);
   const fb = (c / (2 * Math.PI)) * Math.sqrt(A / (Vb * Lcorr));
   document.getElementById('resultadoSintonia').innerText = `Frequência: ${fb.toFixed(2)} Hz`;
 }
