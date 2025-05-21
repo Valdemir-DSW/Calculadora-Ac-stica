@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora Acústica + Gerador Senoidal</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .tabs button {
+      padding: 10px; margin-right: 5px; cursor: pointer;
+      border: 1px solid #ccc; border-radius: 4px;
+      background-color: #eee;
+    }
+    .tabs button.active { background-color: #ccc; }
+    .tab { display: none; margin-top: 20px; }
+    .tab.active { display: block; }
+    input, select { margin: 5px 0; padding: 5px; width: 100%; max-width: 300px; }
+    label { display: block; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>Calculadora Acústica</h2>
+<h6>By Valdemir</h6>
+<a href="https://github.com/Valdemir-DSW/Calculadora-Ac-stica/tree/main">GIT-HUB</a>
+
+<div class="tabs">
+  <button onclick="openTab('volume')" class="active">Volume da Caixa</button>
+  <button onclick="openTab('sintonia')">Frequência de Sintonia</button>
+  <button onclick="openTab('impedancia')">Impedância</button>
+  <button onclick="openTab('senoidal')">Gerador Senoidal</button>
+</div>
+
+<!-- Aba Volume -->
+<div id="volume" class="tab active">
+  <h3>Volume da Caixa</h3>
+  <label>Tipo:
+    <select id="tipoCaixa" onchange="mostrarCamposVolume()">
+      <option value="retangular">Retangular / Quadrada</option>
+      <option value="cilindrica">Cilíndrica</option>
+      <option value="trapezoidal">Trapezoidal</option>
+    </select>
+  </label>
+  <div id="camposVolume"></div>
+  <button onclick="calcularVolume()">Calcular Volume</button>
+  <p id="resultadoVolume"></p>
+</div>
+
+<!-- Aba Sintonia -->
+<div id="sintonia" class="tab">
+  <h3>Frequência de Sintonia</h3>
+  <label>Volume da caixa (litros): <input type="number" id="volumeSintonia"></label>
+  <label>Tipo de duto:
+    <select id="tipoDuto" onchange="mostrarCamposDuto()">
+      <option value="retangular">Retangular / Quadrado</option>
+      <option value="cilindrico">Cilíndrico</option>
+    </select>
+  </label>
+  <div id="camposDuto"></div>
+  <button onclick="calcularSintonia()">Calcular Frequência</button>
+  <p id="resultadoSintonia"></p>
+</div>
+
+<!-- Aba Impedância -->
+<div id="impedancia" class="tab">
+  <h3>Calculadora de Impedância</h3>
+  <label>Tipo de ligação:
+    <select id="tipoLigacao">
+      <option value="serie">Série</option>
+      <option value="paralelo">Paralelo</option>
+    </select>
+  </label>
+  <label>Impedâncias (Ω) separadas por vírgula:
+    <input type="text" id="impedancias" placeholder="Ex: 4, 4, 8">
+  </label>
+  <button onclick="calcularImpedancia()">Calcular Impedância Total</button>
+  <p id="resultadoImpedancia"></p>
+</div>
+
+<!-- Aba Gerador Senoidal -->
+<div id="senoidal" class="tab">
+  <h3>Gerador de Frequência Senoidal</h3>
+  <label>Frequência (Hz): <input type="number" id="frequencia" value="100" min="20" max="20000"></label>
+  <label>Volume: <input type="range" id="volumeAudio" min="0" max="1" step="0.01" value="0.5"></label>
+  <button onclick="startOsc()">▶️ Play</button>
+  <button onclick="stopOsc()">⏸️ Pause</button>
+</div>
+
+<script>
+function openTab(tabId) {
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Volume
+function mostrarCamposVolume() {
+  const tipo = document.getElementById('tipoCaixa').value;
+  const div = document.getElementById('camposVolume');
+  let html = '';
+
+  if (tipo === 'retangular') {
+    html = `
+      <label>Altura (cm): <input type="number" id="altura"></label>
+      <label>Largura (cm): <input type="number" id="largura"></label>
+      <label>Profundidade (cm): <input type="number" id="profundidade"></label>
+    `;
+  } else if (tipo === 'cilindrica') {
+    html = `
+      <label>Diâmetro (cm): <input type="number" id="diametro"></label>
+      <label>Altura (cm): <input type="number" id="alturaCil"></label>
+    `;
+  } else {
+    html = `
+      <label>Base maior (cm): <input type="number" id="baseMaior"></label>
+      <label>Base menor (cm): <input type="number" id="baseMenor"></label>
+      <label>Altura (cm): <input type="number" id="alturaTrap"></label>
+      <label>Profundidade (cm): <input type="number" id="profundidadeTrap"></label>
+    `;
+  }
+
+  div.innerHTML = html;
+}
+mostrarCamposVolume();
+
+function calcularVolume() {
+  const tipo = document.getElementById('tipoCaixa').value;
+  let volume = 0;
+
+  if (tipo === 'retangular') {
+    const a = +document.getElementById('altura').value;
+    const l = +document.getElementById('largura').value;
+    const p = +document.getElementById('profundidade').value;
+    volume = a * l * p / 1000;
+  } else if (tipo === 'cilindrica') {
+    const d = +document.getElementById('diametro').value;
+    const h = +document.getElementById('alturaCil').value;
+    volume = Math.PI * Math.pow(d / 2, 2) * h / 1000;
+  } else {
+    const B = +document.getElementById('baseMaior').value;
+    const b = +document.getElementById('baseMenor').value;
+    const h = +document.getElementById('alturaTrap').value;
+    const p = +document.getElementById('profundidadeTrap').value;
+    volume = ((B + b) / 2) * h * p / 1000;
+  }
+
+  document.getElementById('resultadoVolume').innerText = `Volume: ${volume.toFixed(2)} litros`;
+}
+
+// Sintonia
+function mostrarCamposDuto() {
+  const tipo = document.getElementById('tipoDuto').value;
+  const div = document.getElementById('camposDuto');
+  let html = `<label>Comprimento do duto (cm): <input type="number" id="comprimentoDuto"></label>`;
+
+  if (tipo === 'retangular') {
+    html += `
+      <label>Largura do duto (cm): <input type="number" id="larguraDuto"></label>
+      <label>Altura do duto (cm): <input type="number" id="alturaDuto"></label>
+    `;
+  } else {
+    html += `<label>Diâmetro do duto (cm): <input type="number" id="diametroDuto"></label>`;
+  }
+
+  div.innerHTML = html;
+}
+mostrarCamposDuto();
+
+function calcularSintonia() {
+  const Vb = +document.getElementById('volumeSintonia').value / 1000;
+  const tipo = document.getElementById('tipoDuto').value;
+  const L = +document.getElementById('comprimentoDuto').value / 100;
+  const c = 343;
+  let A = 0;
+
+  if (tipo === 'retangular') {
+    const w = +document.getElementById('larguraDuto').value / 100;
+    const h = +document.getElementById('alturaDuto').value / 100;
+    A = w * h;
+  } else {
+    const d = +document.getElementById('diametroDuto').value / 100;
+    A = Math.PI * Math.pow(d / 2, 2);
+  }
+
+  const Lcorr = L + 0.85 * Math.sqrt(A);
+  const fb = (c / (2 * Math.PI)) * Math.sqrt(A / (Vb * Lcorr));
+  document.getElementById('resultadoSintonia').innerText = `Frequência: ${fb.toFixed(2)} Hz`;
+}
+
+// Impedância
+function calcularImpedancia() {
+  const tipo = document.getElementById('tipoLigacao').value;
+  const impedancias = document.getElementById('impedancias').value.split(',').map(v => +v.trim());
+  let resultado = 0;
+
+  if (tipo === 'serie') {
+    resultado = impedancias.reduce((a, b) => a + b, 0);
+  } else {
+    resultado = 1 / impedancias.reduce((acc, val) => acc + 1 / val, 0);
+  }
+
+  document.getElementById('resultadoImpedancia').innerText = `Impedância total: ${resultado.toFixed(2)} Ω`;
+}
+
+// Gerador Senoidal
+let audioCtx, oscillator, gainNode;
+
+function startOsc() {
+  const freq = +document.getElementById('frequencia').value;
+  const vol = +document.getElementById('volumeAudio').value;
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  oscillator = audioCtx.createOscillator();
+  gainNode = audioCtx.createGain();
+
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  oscillator.start();
+}
+
+function stopOsc() {
+  if (oscillator) {
+    oscillator.stop();
+    oscillator.disconnect();
+    gainNode.disconnect();
+    oscillator = null;
+    gainNode = null;
+  }
+}
+</script>
+
+</body>
+</html>
